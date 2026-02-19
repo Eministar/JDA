@@ -48,6 +48,7 @@ public class RestConfig {
     private String baseUrl = DEFAULT_BASE_URL;
     private boolean relativeRateLimit = true;
     private Consumer<? super Request.Builder> customBuilder;
+    private Consumer<? super RestRateLimiter.RateLimitEvent> rateLimitEventConsumer;
     private Function<? super RestRateLimiter.RateLimitConfig, ? extends RestRateLimiter> rateLimiter =
             SequentialRestRateLimiter::new;
 
@@ -160,6 +161,25 @@ public class RestConfig {
     }
 
     /**
+     * Optional observability hook for rate-limit processing.
+     * <br>The default {@link SequentialRestRateLimiter} emits structured events to this consumer.
+     *
+     * <p>This is useful for metrics, alerts, and operational dashboards.
+     * The callback should avoid blocking behavior to keep request processing fast.
+     *
+     * @param  rateLimitEventConsumer
+     *         Event consumer, or null to disable
+     *
+     * @return The current RestConfig for chaining convenience
+     */
+    @Nonnull
+    public RestConfig setRateLimitEventConsumer(
+            @Nullable Consumer<? super RestRateLimiter.RateLimitEvent> rateLimitEventConsumer) {
+        this.rateLimitEventConsumer = rateLimitEventConsumer;
+        return this;
+    }
+
+    /**
      * The adapted user-agent with the custom {@link #setUserAgentSuffix(String) suffix}.
      *
      * @return The user-agent
@@ -197,6 +217,16 @@ public class RestConfig {
     @Nullable
     public Consumer<? super Request.Builder> getCustomBuilder() {
         return customBuilder;
+    }
+
+    /**
+     * The optional consumer for rate-limit observability events.
+     *
+     * @return The consumer, or null if none is configured
+     */
+    @Nullable
+    public Consumer<? super RestRateLimiter.RateLimitEvent> getRateLimitEventConsumer() {
+        return rateLimitEventConsumer;
     }
 
     /**

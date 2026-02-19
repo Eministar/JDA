@@ -263,6 +263,33 @@ This could then be used in code:
 selfDestruct(channel, "Hello friend, this is my secret message").queue();
 ```
 
+### Rate-Limit Observability
+
+JDA can emit structured rate-limit events from the default `SequentialRestRateLimiter`.
+This allows you to export queue pressure and 429 behavior to logs, metrics, or tracing systems.
+
+```java
+RestConfig restConfig = new RestConfig().setRateLimitEventConsumer(event -> {
+    if (event.getType() == RestRateLimiter.RateLimitEvent.Type.RATE_LIMITED) {
+        int shardId = event.getJDA().getShardInfo() == null
+                ? -1
+                : event.getJDA().getShardInfo().getShardId();
+
+        System.out.printf(
+                "rate-limit shard=%d route=%s bucket=%s retryAfterMs=%d scope=%s\n",
+                shardId,
+                event.getRoute().getBaseRoute(),
+                event.getBucketId(),
+                event.getRetryAfterMillis(),
+                event.getScope());
+    }
+});
+
+JDABuilder.createDefault(BOT_TOKEN)
+    .setRestConfig(restConfig)
+    .build();
+```
+
 ## 🧩 Extensions
 
 ### [jda-ktx](https://github.com/MinnDevelopment/jda-ktx)
