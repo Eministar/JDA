@@ -271,7 +271,8 @@ public class JDAImpl implements JDA {
                         this.threadConfig.getRateLimitElastic(),
                         getSessionController().getRateLimitHandle(),
                         this.sessionConfig.isRelativeRateLimit() && this.restConfig.isRelativeRateLimit(),
-                        this.restConfig.getRateLimitEventConsumer()));
+                        this.restConfig.getRateLimitEventConsumer(),
+                        this.restConfig.getMetricsCollector()));
         this.requester = new Requester(this, this.authConfig, this.restConfig, rateLimiter);
         this.requester.setRetryOnTimeout(this.sessionConfig.isRetryOnTimeout());
     }

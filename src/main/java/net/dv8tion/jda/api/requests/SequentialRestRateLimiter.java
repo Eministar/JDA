@@ -74,6 +74,7 @@ public final class SequentialRestRateLimiter implements RestRateLimiter {
     private final Future<?> cleanupWorker;
     private final RateLimitConfig config;
     private final Consumer<? super RateLimitEvent> eventConsumer;
+    private final RestMetricsCollector metricsCollector;
 
     private boolean isStopped, isShutdown;
 
@@ -90,6 +91,7 @@ public final class SequentialRestRateLimiter implements RestRateLimiter {
     public SequentialRestRateLimiter(@Nonnull RateLimitConfig config) {
         this.config = config;
         this.eventConsumer = config.getEventConsumer();
+        this.metricsCollector = config.getMetricsCollector();
         this.cleanupWorker = config.getScheduler().scheduleAtFixedRate(this::cleanup, 30, 30, TimeUnit.SECONDS);
     }
 
@@ -117,12 +119,23 @@ public final class SequentialRestRateLimiter implements RestRateLimiter {
 
     private void emitEvent(@Nonnull RateLimitEvent event) {
         if (eventConsumer == null) {
-            return;
+            if (metricsCollector == null) {
+                return;
+            }
         }
-        try {
-            eventConsumer.accept(event);
-        } catch (Exception ex) {
-            log.warn("Rate limit event consumer threw an exception", ex);
+        if (eventConsumer != null) {
+            try {
+                eventConsumer.accept(event);
+            } catch (Exception ex) {
+                log.warn("Rate limit event consumer threw an exception", ex);
+            }
+        }
+        if (metricsCollector != null) {
+            try {
+                metricsCollector.onRateLimit(event);
+            } catch (Exception ex) {
+                log.warn("Metrics collector threw an exception for rate-limit event", ex);
+            }
         }
     }
 

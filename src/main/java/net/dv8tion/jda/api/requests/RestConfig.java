@@ -32,6 +32,8 @@ import javax.annotation.Nullable;
  *
  * <p>This can be used to replace the {@link #setRateLimiterFactory(Function) rate-limit handling}
  * or to use a different {@link #setBaseUrl(String) base url} for requests, e.g. for mocked HTTP responses or proxies.
+ * It also supports observability hooks such as
+ * {@link #setRateLimitEventConsumer(Consumer)} and {@link #setMetricsCollector(RestMetricsCollector)}.
  */
 public class RestConfig {
     /**
@@ -49,6 +51,7 @@ public class RestConfig {
     private boolean relativeRateLimit = true;
     private Consumer<? super Request.Builder> customBuilder;
     private Consumer<? super RestRateLimiter.RateLimitEvent> rateLimitEventConsumer;
+    private RestMetricsCollector metricsCollector;
     private Function<? super RestRateLimiter.RateLimitConfig, ? extends RestRateLimiter> rateLimiter =
             SequentialRestRateLimiter::new;
 
@@ -180,6 +183,21 @@ public class RestConfig {
     }
 
     /**
+     * Optional metrics collector for REST and rate-limit processing.
+     * <br>This provides a neutral bridge for custom integrations such as Micrometer/OpenTelemetry adapters.
+     *
+     * @param  metricsCollector
+     *         The metrics collector, or null to disable
+     *
+     * @return The current RestConfig for chaining convenience
+     */
+    @Nonnull
+    public RestConfig setMetricsCollector(@Nullable RestMetricsCollector metricsCollector) {
+        this.metricsCollector = metricsCollector;
+        return this;
+    }
+
+    /**
      * The adapted user-agent with the custom {@link #setUserAgentSuffix(String) suffix}.
      *
      * @return The user-agent
@@ -227,6 +245,16 @@ public class RestConfig {
     @Nullable
     public Consumer<? super RestRateLimiter.RateLimitEvent> getRateLimitEventConsumer() {
         return rateLimitEventConsumer;
+    }
+
+    /**
+     * Optional metrics collector for REST and rate-limit processing.
+     *
+     * @return The metrics collector, or null if none is configured
+     */
+    @Nullable
+    public RestMetricsCollector getMetricsCollector() {
+        return metricsCollector;
     }
 
     /**

@@ -168,7 +168,8 @@ public interface RestRateLimiter {
      * <br>Use this to inspect queue pressure, retry behavior, and encountered 429 responses per route and bucket.
      *
      * <p>These events are optional and only emitted when
-     * {@link RateLimitConfig#getEventConsumer() RateLimitConfig.eventConsumer} is configured.
+     * {@link RateLimitConfig#getEventConsumer() RateLimitConfig.eventConsumer} or
+     * {@link RateLimitConfig#getMetricsCollector() RateLimitConfig.metricsCollector} is configured.
      */
     class RateLimitEvent {
         public enum Type {
@@ -435,12 +436,13 @@ public interface RestRateLimiter {
         private final GlobalRateLimit globalRateLimit;
         private final boolean isRelative;
         private final Consumer<? super RateLimitEvent> eventConsumer;
+        private final RestMetricsCollector metricsCollector;
 
         public RateLimitConfig(
                 @Nonnull ScheduledExecutorService scheduler,
                 @Nonnull GlobalRateLimit globalRateLimit,
                 boolean isRelative) {
-            this(scheduler, scheduler, globalRateLimit, isRelative, null);
+            this(scheduler, scheduler, globalRateLimit, isRelative, null, null);
         }
 
         public RateLimitConfig(
@@ -448,7 +450,7 @@ public interface RestRateLimiter {
                 @Nonnull ExecutorService elastic,
                 @Nonnull GlobalRateLimit globalRateLimit,
                 boolean isRelative) {
-            this(scheduler, elastic, globalRateLimit, isRelative, null);
+            this(scheduler, elastic, globalRateLimit, isRelative, null, null);
         }
 
         public RateLimitConfig(
@@ -456,7 +458,7 @@ public interface RestRateLimiter {
                 @Nonnull GlobalRateLimit globalRateLimit,
                 boolean isRelative,
                 @Nullable Consumer<? super RateLimitEvent> eventConsumer) {
-            this(scheduler, scheduler, globalRateLimit, isRelative, eventConsumer);
+            this(scheduler, scheduler, globalRateLimit, isRelative, eventConsumer, null);
         }
 
         public RateLimitConfig(
@@ -465,11 +467,31 @@ public interface RestRateLimiter {
                 @Nonnull GlobalRateLimit globalRateLimit,
                 boolean isRelative,
                 @Nullable Consumer<? super RateLimitEvent> eventConsumer) {
+            this(scheduler, elastic, globalRateLimit, isRelative, eventConsumer, null);
+        }
+
+        public RateLimitConfig(
+                @Nonnull ScheduledExecutorService scheduler,
+                @Nonnull GlobalRateLimit globalRateLimit,
+                boolean isRelative,
+                @Nullable Consumer<? super RateLimitEvent> eventConsumer,
+                @Nullable RestMetricsCollector metricsCollector) {
+            this(scheduler, scheduler, globalRateLimit, isRelative, eventConsumer, metricsCollector);
+        }
+
+        public RateLimitConfig(
+                @Nonnull ScheduledExecutorService scheduler,
+                @Nonnull ExecutorService elastic,
+                @Nonnull GlobalRateLimit globalRateLimit,
+                boolean isRelative,
+                @Nullable Consumer<? super RateLimitEvent> eventConsumer,
+                @Nullable RestMetricsCollector metricsCollector) {
             this.scheduler = scheduler;
             this.elastic = elastic;
             this.globalRateLimit = globalRateLimit;
             this.isRelative = isRelative;
             this.eventConsumer = eventConsumer;
+            this.metricsCollector = metricsCollector;
         }
 
         /**
@@ -524,6 +546,16 @@ public interface RestRateLimiter {
         @Nullable
         public Consumer<? super RateLimitEvent> getEventConsumer() {
             return eventConsumer;
+        }
+
+        /**
+         * Optional metrics collector for rate-limit and request metrics.
+         *
+         * @return The metrics collector, or null if none is configured
+         */
+        @Nullable
+        public RestMetricsCollector getMetricsCollector() {
+            return metricsCollector;
         }
     }
 }

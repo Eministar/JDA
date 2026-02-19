@@ -290,6 +290,32 @@ JDABuilder.createDefault(BOT_TOKEN)
     .build();
 ```
 
+### Metrics Bridge
+
+JDA also supports a neutral metrics bridge via `RestMetricsCollector`.
+This lets you connect request/rate-limit telemetry to Micrometer/OpenTelemetry in your own adapter.
+
+```java
+RestConfig restConfig = new RestConfig().setMetricsCollector(new RestMetricsCollector() {
+    @Override
+    public void onRequest(RequestMetric metric) {
+        System.out.printf(
+                "rest method=%s route=%s status=%d attempts=%d durationMs=%d queued=%s%n",
+                metric.getRoute().getMethod(),
+                metric.getRoute().getBaseRoute(),
+                metric.getStatusCode(),
+                metric.getAttempts(),
+                metric.getDurationMillis(),
+                metric.isQueued());
+    }
+
+    @Override
+    public void onRateLimit(RestRateLimiter.RateLimitEvent event) {
+        // Forward to your metrics backend
+    }
+});
+```
+
 ## 🧩 Extensions
 
 ### [jda-ktx](https://github.com/MinnDevelopment/jda-ktx)
